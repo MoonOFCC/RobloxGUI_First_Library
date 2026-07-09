@@ -1,9 +1,9 @@
 --[[
-    AccioLib - v7 (Text Scaling & Visibility Fix)
+    AccioLib - v8 (Ultra Smooth Edition)
+    - SILKY SMOOTH Dragging logic
     - X destroys permanently
     - - minimizes (Right Shift to toggle)
     - Fixed Category/Tab text visibility (RichText + Size 18)
-    - Centered Tab Text for better balance
 ]]
 
 local AccioLib = {}
@@ -18,7 +18,7 @@ function AccioLib:CreateWindow(title)
     local is_destroyed = false
     
     local ScreenGui = Instance.new("ScreenGui")
-    ScreenGui.Name = "AccioLib_v7"
+    ScreenGui.Name = "AccioLib_v8"
     ScreenGui.Parent = (gethui and gethui()) or CoreGui 
     ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 
@@ -48,7 +48,7 @@ function AccioLib:CreateWindow(title)
     TitleLabel.Font = Enum.Font.GothamBold
     TitleLabel.Text = title or "Accio Library"
     TitleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-    TitleLabel.TextSize = 20 -- Larger Title
+    TitleLabel.TextSize = 20
     TitleLabel.RichText = true
     TitleLabel.TextXAlignment = Enum.TextXAlignment.Left
 
@@ -94,6 +94,45 @@ function AccioLib:CreateWindow(title)
         end
     end)
 
+    -- SMOOTH DRAGGING LOGIC (v8)
+    local dragging, dragInput, dragStart, startPos
+
+    local function update(input)
+        local delta = input.Position - dragStart
+        -- Extremely short duration (0.07) + Sine Out creates the "Silky" feel
+        local tweenInfo = TweenInfo.new(0.07, Enum.EasingStyle.Sine, Enum.EasingDirection.Out)
+        local targetPos = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+        
+        TweenService:Create(MainFrame, tweenInfo, {Position = targetPos}):Play()
+    end
+
+    TopBar.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            dragging = true
+            dragStart = input.Position
+            startPos = MainFrame.Position
+
+            input.Changed:Connect(function()
+                if input.UserInputState == Enum.UserInputState.End then
+                    dragging = false
+                end
+            end)
+        end
+    end)
+
+    TopBar.InputChanged:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+            dragInput = input
+        end
+    end)
+
+    UserInputService.InputChanged:Connect(function(input)
+        if input == dragInput and dragging then
+            update(input)
+        end
+    end)
+
+    -- Sidebar and Content Structure
     local Sidebar = Instance.new("Frame", MainFrame)
     Sidebar.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
     Sidebar.Position = UDim2.new(0, 0, 0, 40)
@@ -114,34 +153,19 @@ function AccioLib:CreateWindow(title)
     ContentArea.Position = UDim2.new(0, 155, 0, 45)
     ContentArea.Size = UDim2.new(1, -160, 1, -50)
 
-    -- Dragging
-    local dragging, dragInput, dragStart, startPos
-    TopBar.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 then
-            dragging = true; dragStart = input.Position; startPos = MainFrame.Position
-            input.Changed:Connect(function() if input.UserInputState == Enum.UserInputState.End then dragging = false end end)
-        end
-    end)
-    UserInputService.InputChanged:Connect(function(input)
-        if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
-            local delta = input.Position - dragStart
-            MainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
-        end
-    end)
-
     local currentTab = nil
     function Window:CreateTab(name)
         local Tab = {}
         local TabButton = Instance.new("TextButton", TabContainer)
         TabButton.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
         TabButton.BackgroundTransparency = 1
-        TabButton.Size = UDim2.new(1, -14, 0, 40) -- Wider and taller
+        TabButton.Size = UDim2.new(1, -14, 0, 40)
         TabButton.Text = name
         TabButton.TextColor3 = Color3.fromRGB(160, 160, 160)
         TabButton.Font = Enum.Font.GothamBold
-        TabButton.TextSize = 18 -- Large and Bold for visibility
+        TabButton.TextSize = 18
         TabButton.RichText = true
-        TabButton.TextXAlignment = Enum.TextXAlignment.Center -- Centered looks better when large
+        TabButton.TextXAlignment = Enum.TextXAlignment.Center
         Instance.new("UICorner", TabButton).CornerRadius = UDim.new(0, 6)
 
         local Page = Instance.new("ScrollingFrame", ContentArea)
