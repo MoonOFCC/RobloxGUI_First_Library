@@ -4,36 +4,28 @@
     local AccioLib = loadstring(game:HttpGet("https://raw.githubusercontent.com/username/repo/main/library.lua"))()
 ]]
 
--- For local testing purposes, we assume AccioLib is already loaded or required
-local AccioLib = loadfile("library.lua")()
+-- 1. Load your library from GitHub
+local LibRaw = "https://raw.githubusercontent.com/MoonOFCC/RobloxGUI_First_Library/refs/heads/main/library_main.lua"
+local AccioLib = loadstring(game:HttpGet(LibRaw))()
 
--- Create the main window
-local window = AccioLib:CreateWindow("My Script Hub")
+-- 2. Create the Window
+local window = AccioLib:CreateWindow("Moon Hub")
 
--- Create a dynamic category (Tab)
+-- 3. Create a Tab
 local farmTab = window:CreateTab("Autofarm")
 
--- Add a toggle
-farmTab:CreateToggle("Auto Lemonz", false, function(state)
-    print("Auto Farm is now:", state)
-    _G.farming = state
+-- 4. Add interactive components
+farmTab:CreateToggle("Auto Farming", false, function(state)
+    print("Auto farm is now:", state)
+    _G.autoFarm = state
 end)
 
--- Add a button
-farmTab:CreateButton("Reset Character", function()
-    print("Resetting character...")
-    game.Players.LocalPlayer.Character:BreakJoints()
+farmTab:CreateButton("Kill Roblox", function()
+    game:Shutdown() -- Just an example!
 end)
 
--- Create another category
-local miscTab = window:CreateTab("Misc")
-
-miscTab:CreateButton("Print Hello", function()
-    print("Hello from AccioLib!")
+-- 5. Add another Tab
+local infoTab = window:CreateTab("Credits")
+infoTab:CreateButton("Made by MoonOFCC", function()
+    print("Visit the GitHub repo for more info!")
 end)
-
-miscTab:CreateToggle("Anti-AFK", true, function(state)
-    print("Anti-AFK set to:", state)
-end)
-
-print("GUI Loaded Successfully!")
