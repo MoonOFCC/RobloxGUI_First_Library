@@ -1,15 +1,15 @@
 --[[
-    AccioLib - v8 (Ultra Smooth Edition)
-    - SILKY SMOOTH Dragging logic
-    - X destroys permanently
-    - - minimizes (Right Shift to toggle)
-    - Fixed Category/Tab text visibility (RichText + Size 18)
+    AccioLib - v9 (Ultra Smooth & Label Update)
+    - LERP-based Silky Smooth Dragging (High Performance)
+    - CreateLabel feature added
+    - X destroys permanently | - minimizes (Right Shift)
 ]]
 
 local AccioLib = {}
 
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
 local CoreGui = game:GetService("CoreGui")
 
 function AccioLib:CreateWindow(title)
@@ -18,7 +18,7 @@ function AccioLib:CreateWindow(title)
     local is_destroyed = false
     
     local ScreenGui = Instance.new("ScreenGui")
-    ScreenGui.Name = "AccioLib_v8"
+    ScreenGui.Name = "AccioLib_v9"
     ScreenGui.Parent = (gethui and gethui()) or CoreGui 
     ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 
@@ -94,41 +94,33 @@ function AccioLib:CreateWindow(title)
         end
     end)
 
-    -- SMOOTH DRAGGING LOGIC (v8)
-    local dragging, dragInput, dragStart, startPos
-
-    local function update(input)
-        local delta = input.Position - dragStart
-        -- Extremely short duration (0.07) + Sine Out creates the "Silky" feel
-        local tweenInfo = TweenInfo.new(0.07, Enum.EasingStyle.Sine, Enum.EasingDirection.Out)
-        local targetPos = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
-        
-        TweenService:Create(MainFrame, tweenInfo, {Position = targetPos}):Play()
-    end
-
+    -- [NEW] SILKY LERP DRAGGING SYSTEM
+    local dragging = false
+    local dragInput, dragStart, startPos
+    
     TopBar.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
             dragging = true
             dragStart = input.Position
             startPos = MainFrame.Position
-
-            input.Changed:Connect(function()
-                if input.UserInputState == Enum.UserInputState.End then
-                    dragging = false
-                end
-            end)
         end
     end)
 
-    TopBar.InputChanged:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
-            dragInput = input
+    UserInputService.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            dragging = false
         end
     end)
 
-    UserInputService.InputChanged:Connect(function(input)
-        if input == dragInput and dragging then
-            update(input)
+    RunService.RenderStepped:Connect(function()
+        if dragging and dragStart and startPos then
+            local mouseLoc = UserInputService:GetMouseLocation()
+            -- We adjust for the topbar inset in Roblox
+            local delta = Vector3.new(mouseLoc.X - dragStart.X, mouseLoc.Y - dragStart.Y - 36, 0)
+            local targetPos = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+            
+            -- LERP creates the "weighted" silky feeling (0.2 is the smoothness factor)
+            MainFrame.Position = MainFrame.Position:Lerp(targetPos, 0.2)
         end
     end)
 
@@ -189,6 +181,20 @@ function AccioLib:CreateWindow(title)
 
         TabButton.MouseButton1Click:Connect(selectTab)
         if not currentTab then selectTab() end
+
+        -- [NEW] CreateLabel Function
+        function Tab:CreateLabel(text)
+            local Label = Instance.new("TextLabel", Page)
+            Label.BackgroundTransparency = 1
+            Label.Size = UDim2.new(1, -10, 0, 30)
+            Label.Font = Enum.Font.GothamMedium
+            Label.Text = text
+            Label.TextColor3 = Color3.fromRGB(200, 200, 200)
+            Label.TextSize = 14
+            Label.RichText = true
+            Label.TextXAlignment = Enum.TextXAlignment.Center
+            return Label
+        end
 
         function Tab:CreateButton(text, callback, customColor)
             local baseColor = customColor or Color3.fromRGB(45, 45, 45)
