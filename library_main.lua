@@ -1,22 +1,23 @@
 --[[
-    AccioLib - A modern, smooth Roblox GUI Library
-    Features: Smooth dragging, Tabs, Buttons, Toggles
+    AccioLib - Updated for GitHub/Executors
+    Features: Close (X), Minimize (-), and Keybind Toggle (RightShift)
 ]]
 
 local AccioLib = {}
 
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
-local RunService = game:GetService("RunService")
 local CoreGui = game:GetService("CoreGui")
 
 function AccioLib:CreateWindow(title)
     local Window = {}
+    local ui_toggled = true
     
     -- Main UI Construction
     local ScreenGui = Instance.new("ScreenGui")
-    ScreenGui.Name = "AccioLib"
-    ScreenGui.Parent = CoreGui
+    ScreenGui.Name = "AccioLib_v2"
+    -- Protecting the GUI from being detected/deleted easily in some executors
+    ScreenGui.Parent = (gethui and gethui()) or CoreGui 
     ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 
     local MainFrame = Instance.new("Frame")
@@ -55,13 +56,63 @@ function AccioLib:CreateWindow(title)
     TitleLabel.Parent = TopBar
     TitleLabel.BackgroundTransparency = 1
     TitleLabel.Position = UDim2.new(0, 15, 0, 0)
-    TitleLabel.Size = UDim2.new(1, -30, 1, 0)
+    TitleLabel.Size = UDim2.new(1, -100, 1, 0)
     TitleLabel.Font = Enum.Font.GothamMedium
     TitleLabel.Text = title or "Accio Library"
     TitleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
     TitleLabel.TextSize = 14
     TitleLabel.TextXAlignment = Enum.TextXAlignment.Left
 
+    -- [NEW] BUTTONS CONTAINER
+    local Buttons = Instance.new("Frame")
+    Buttons.Name = "Buttons"
+    Buttons.Parent = TopBar
+    Buttons.BackgroundTransparency = 1
+    Buttons.Position = UDim2.new(1, -75, 0, 0)
+    Buttons.Size = UDim2.new(0, 70, 1, 0)
+
+    -- Function to create TopBar Buttons
+    local function createTopBtn(text, color, pos)
+        local btn = Instance.new("TextButton")
+        btn.Parent = Buttons
+        btn.BackgroundTransparency = 1
+        btn.Position = pos
+        btn.Size = UDim2.new(0, 30, 1, 0)
+        btn.Font = Enum.Font.GothamBold
+        btn.Text = text
+        btn.TextColor3 = color
+        btn.TextSize = 18
+        
+        btn.MouseEnter:Connect(function()
+            TweenService:Create(btn, TweenInfo.new(0.2), {TextTransparency = 0.5}):Play()
+        end)
+        btn.MouseLeave:Connect(function()
+            TweenService:Create(btn, TweenInfo.new(0.2), {TextTransparency = 0}):Play()
+        end)
+        
+        return btn
+    end
+
+    local CloseBtn = createTopBtn("×", Color3.fromRGB(255, 100, 100), UDim2.new(0, 35, 0, 0))
+    local MinBtn = createTopBtn("−", Color3.fromRGB(200, 200, 200), UDim2.new(0, 0, 0, 0))
+
+    -- Visibility Toggle Logic
+    local function toggleUI()
+        ui_toggled = not ui_toggled
+        MainFrame.Visible = ui_toggled
+    end
+
+    CloseBtn.MouseButton1Click:Connect(toggleUI)
+    MinBtn.MouseButton1Click:Connect(toggleUI)
+
+    -- [NEW] Keybind to reopen (RightShift)
+    UserInputService.InputBegan:Connect(function(input, gpe)
+        if not gpe and input.KeyCode == Enum.KeyCode.RightShift then
+            toggleUI()
+        end
+    end)
+
+    -- Sidebar and Content Logic (UNCHANGED)
     local Sidebar = Instance.new("Frame")
     Sidebar.Name = "Sidebar"
     Sidebar.Parent = MainFrame
@@ -103,12 +154,8 @@ function AccioLib:CreateWindow(title)
     ContentArea.Position = UDim2.new(0, 155, 0, 45)
     ContentArea.Size = UDim2.new(1, -160, 1, -50)
 
-    -- Smooth Dragging Logic
-    local dragging
-    local dragInput
-    local dragStart
-    local startPos
-
+    -- Dragging Logic
+    local dragging, dragInput, dragStart, startPos
     local function update(input)
         local delta = input.Position - dragStart
         local targetPos = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
@@ -120,41 +167,28 @@ function AccioLib:CreateWindow(title)
             dragging = true
             dragStart = input.Position
             startPos = MainFrame.Position
-
             input.Changed:Connect(function()
-                if input.UserInputState == Enum.UserInputState.End then
-                    dragging = false
-                end
+                if input.UserInputState == Enum.UserInputState.End then dragging = false end
             end)
         end
     end)
-
     TopBar.InputChanged:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
-            dragInput = input
-        end
+        if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then dragInput = input end
     end)
-
     UserInputService.InputChanged:Connect(function(input)
-        if input == dragInput and dragging then
-            update(input)
-        end
+        if input == dragInput and dragging then update(input) end
     end)
 
-    local Tabs = {}
+    -- Tab System
     local currentTab = nil
-
-    function Window:CreateTab(name, icon)
+    function Window:CreateTab(name)
         local Tab = {}
-        
         local TabButton = Instance.new("TextButton")
-        TabButton.Name = name .. "Tab"
         TabButton.Parent = TabContainer
         TabButton.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
         TabButton.BackgroundTransparency = 1
         TabButton.Size = UDim2.new(1, -10, 0, 30)
         TabButton.Position = UDim2.new(0, 5, 0, 0)
-        TabButton.AutoButtonColor = false
         TabButton.Font = Enum.Font.Gotham
         TabButton.Text = "  " .. name
         TabButton.TextColor3 = Color3.fromRGB(150, 150, 150)
@@ -166,14 +200,12 @@ function AccioLib:CreateWindow(title)
         TabUICorner.Parent = TabButton
 
         local Page = Instance.new("ScrollingFrame")
-        Page.Name = name .. "Page"
         Page.Parent = ContentArea
         Page.BackgroundTransparency = 1
         Page.BorderSizePixel = 0
         Page.Size = UDim2.new(1, 0, 1, 0)
         Page.Visible = false
         Page.ScrollBarThickness = 2
-        Page.ScrollBarImageColor3 = Color3.fromRGB(80, 80, 80)
         
         local PageLayout = Instance.new("UIListLayout")
         PageLayout.Parent = Page
@@ -197,45 +229,26 @@ function AccioLib:CreateWindow(title)
 
         function Tab:CreateButton(text, callback)
             local Button = Instance.new("TextButton")
-            Button.Name = text .. "Button"
             Button.Parent = Page
             Button.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
-            Button.BorderSizePixel = 0
             Button.Size = UDim2.new(1, -10, 0, 35)
-            Button.AutoButtonColor = false
             Button.Font = Enum.Font.Gotham
             Button.Text = text
             Button.TextColor3 = Color3.fromRGB(230, 230, 230)
             Button.TextSize = 13
             
-            local UICorner_2 = Instance.new("UICorner")
-            UICorner_2.CornerRadius = UDim.new(0, 6)
-            UICorner_2.Parent = Button
-
-            Button.MouseButton1Down:Connect(function()
-                TweenService:Create(Button, TweenInfo.new(0.1), {BackgroundColor3 = Color3.fromRGB(55, 55, 55)}):Play()
-            end)
-            Button.MouseButton1Up:Connect(function()
-                TweenService:Create(Button, TweenInfo.new(0.1), {BackgroundColor3 = Color3.fromRGB(45, 45, 45)}):Play()
-                if callback then callback() end
-            end)
-            
+            Instance.new("UICorner", Button).CornerRadius = UDim.new(0, 6)
+            Button.MouseButton1Click:Connect(function() if callback then callback() end end)
             return Button
         end
 
         function Tab:CreateToggle(text, default, callback)
             local Toggled = default or false
-            
             local ToggleFrame = Instance.new("Frame")
-            ToggleFrame.Name = text .. "Toggle"
             ToggleFrame.Parent = Page
             ToggleFrame.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
-            ToggleFrame.BorderSizePixel = 0
             ToggleFrame.Size = UDim2.new(1, -10, 0, 35)
-
-            local UICorner_3 = Instance.new("UICorner")
-            UICorner_3.CornerRadius = UDim.new(0, 6)
-            UICorner_3.Parent = ToggleFrame
+            Instance.new("UICorner", ToggleFrame).CornerRadius = UDim.new(0, 6)
 
             local ToggleLabel = Instance.new("TextLabel")
             ToggleLabel.Parent = ToggleFrame
@@ -249,26 +262,18 @@ function AccioLib:CreateWindow(title)
             ToggleLabel.TextXAlignment = Enum.TextXAlignment.Left
 
             local SwitchBG = Instance.new("Frame")
-            SwitchBG.Name = "Switch"
             SwitchBG.Parent = ToggleFrame
             SwitchBG.BackgroundColor3 = Toggled and Color3.fromRGB(0, 170, 255) or Color3.fromRGB(60, 60, 60)
             SwitchBG.Position = UDim2.new(1, -50, 0.5, -10)
             SwitchBG.Size = UDim2.new(0, 40, 0, 20)
-            
-            local UICorner_4 = Instance.new("UICorner")
-            UICorner_4.CornerRadius = UDim.new(1, 0)
-            UICorner_4.Parent = SwitchBG
+            Instance.new("UICorner", SwitchBG).CornerRadius = UDim.new(1, 0)
 
             local Knob = Instance.new("Frame")
-            Knob.Name = "Knob"
             Knob.Parent = SwitchBG
             Knob.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
             Knob.Position = Toggled and UDim2.new(1, -18, 0, 2) or UDim2.new(0, 2, 0, 2)
             Knob.Size = UDim2.new(0, 16, 0, 16)
-            
-            local UICorner_5 = Instance.new("UICorner")
-            UICorner_5.CornerRadius = UDim.new(1, 0)
-            UICorner_5.Parent = Knob
+            Instance.new("UICorner", Knob).CornerRadius = UDim.new(1, 0)
 
             local ClickRegion = Instance.new("TextButton")
             ClickRegion.Parent = ToggleFrame
@@ -276,25 +281,16 @@ function AccioLib:CreateWindow(title)
             ClickRegion.Size = UDim2.new(1, 0, 1, 0)
             ClickRegion.Text = ""
 
-            local function toggle()
+            ClickRegion.MouseButton1Click:Connect(function()
                 Toggled = not Toggled
-                local targetColor = Toggled and Color3.fromRGB(0, 170, 255) or Color3.fromRGB(60, 60, 60)
-                local targetPos = Toggled and UDim2.new(1, -18, 0, 2) or UDim2.new(0, 2, 0, 2)
-                
-                TweenService:Create(SwitchBG, TweenInfo.new(0.2), {BackgroundColor3 = targetColor}):Play()
-                TweenService:Create(Knob, TweenInfo.new(0.2), {Position = targetPos}):Play()
-                
+                TweenService:Create(SwitchBG, TweenInfo.new(0.2), {BackgroundColor3 = Toggled and Color3.fromRGB(0, 170, 255) or Color3.fromRGB(60, 60, 60)}):Play()
+                TweenService:Create(Knob, TweenInfo.new(0.2), {Position = Toggled and UDim2.new(1, -18, 0, 2) or UDim2.new(0, 2, 0, 2)}):Play()
                 if callback then callback(Toggled) end
-            end
-
-            ClickRegion.MouseButton1Click:Connect(toggle)
-            
+            end)
             return ToggleFrame
         end
-
         return Tab
     end
-
     return Window
 end
 
