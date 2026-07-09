@@ -1,8 +1,9 @@
 --[[
-    AccioLib - v9 (Ultra Smooth & Label Update)
-    - LERP-based Silky Smooth Dragging (High Performance)
-    - CreateLabel feature added
-    - X destroys permanently | - minimizes (Right Shift)
+    AccioLib - v10 (The "Polish" Update)
+    - Weighted Interpolation Dragging (Silky Smooth)
+    - CreateLabel fixed (Z-Index & Canvas fix)
+    - Settings & Credits support restored
+    - X = Total Destroy | - = Minimize (Right Shift to return)
 ]]
 
 local AccioLib = {}
@@ -18,7 +19,7 @@ function AccioLib:CreateWindow(title)
     local is_destroyed = false
     
     local ScreenGui = Instance.new("ScreenGui")
-    ScreenGui.Name = "AccioLib_v9"
+    ScreenGui.Name = "AccioLib_v10"
     ScreenGui.Parent = (gethui and gethui()) or CoreGui 
     ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 
@@ -48,7 +49,7 @@ function AccioLib:CreateWindow(title)
     TitleLabel.Font = Enum.Font.GothamBold
     TitleLabel.Text = title or "Accio Library"
     TitleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-    TitleLabel.TextSize = 20
+    TitleLabel.TextSize = 18
     TitleLabel.RichText = true
     TitleLabel.TextXAlignment = Enum.TextXAlignment.Left
 
@@ -76,11 +77,13 @@ function AccioLib:CreateWindow(title)
     local CloseBtn = createTopBtn("×", Color3.fromRGB(255, 80, 80), UDim2.new(0, 35, 0, 0))
     local MinBtn = createTopBtn("−", Color3.fromRGB(200, 200, 200), UDim2.new(0, 0, 0, 0))
 
+    -- [X] DESTROY
     CloseBtn.MouseButton1Click:Connect(function()
         is_destroyed = true
         ScreenGui:Destroy()
     end)
 
+    -- [-] MINIMIZE
     local function toggleUI()
         if is_destroyed then return end
         ui_toggled = not ui_toggled
@@ -94,7 +97,7 @@ function AccioLib:CreateWindow(title)
         end
     end)
 
-    -- [NEW] SILKY LERP DRAGGING SYSTEM
+    -- [NEW] WEIGHTED DRAGGING SYSTEM
     local dragging = false
     local dragInput, dragStart, startPos
     
@@ -113,14 +116,14 @@ function AccioLib:CreateWindow(title)
     end)
 
     RunService.RenderStepped:Connect(function()
-        if dragging and dragStart and startPos then
-            local mouseLoc = UserInputService:GetMouseLocation()
-            -- We adjust for the topbar inset in Roblox
-            local delta = Vector3.new(mouseLoc.X - dragStart.X, mouseLoc.Y - dragStart.Y - 36, 0)
-            local targetPos = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+        if dragging and not is_destroyed then
+            local mouse = UserInputService:GetMouseLocation()
+            local targetX = startPos.X.Offset + (mouse.X - dragStart.X)
+            local targetY = startPos.Y.Offset + (mouse.Y - dragStart.Y) - 36
+            local targetPos = UDim2.new(startPos.X.Scale, targetX, startPos.Y.Scale, targetY)
             
-            -- LERP creates the "weighted" silky feeling (0.2 is the smoothness factor)
-            MainFrame.Position = MainFrame.Position:Lerp(targetPos, 0.2)
+            -- Weighted Lerp (0.12 is the smoothness coefficient)
+            MainFrame.Position = MainFrame.Position:Lerp(targetPos, 0.12)
         end
     end)
 
@@ -165,7 +168,12 @@ function AccioLib:CreateWindow(title)
         Page.Size = UDim2.new(1, 0, 1, 0)
         Page.Visible = false
         Page.ScrollBarThickness = 0
-        Instance.new("UIListLayout", Page).Padding = UDim.new(0, 7)
+        Page.BorderSizePixel = 0
+        Page.AutomaticCanvasSize = Enum.AutomaticSize.Y -- CRITICAL: Ensures content is visible
+        
+        local PageLayout = Instance.new("UIListLayout", Page)
+        PageLayout.Padding = UDim.new(0, 7)
+        PageLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
 
         local function selectTab()
             if currentTab then
@@ -182,17 +190,18 @@ function AccioLib:CreateWindow(title)
         TabButton.MouseButton1Click:Connect(selectTab)
         if not currentTab then selectTab() end
 
-        -- [NEW] CreateLabel Function
+        -- [FIXED] CreateLabel Function
         function Tab:CreateLabel(text)
             local Label = Instance.new("TextLabel", Page)
             Label.BackgroundTransparency = 1
-            Label.Size = UDim2.new(1, -10, 0, 30)
-            Label.Font = Enum.Font.GothamMedium
+            Label.Size = UDim2.new(1, -10, 0, 25)
+            Label.Font = Enum.Font.GothamBold
             Label.Text = text
             Label.TextColor3 = Color3.fromRGB(200, 200, 200)
-            Label.TextSize = 14
+            Label.TextSize = 16 -- Increased for visibility
             Label.RichText = true
             Label.TextXAlignment = Enum.TextXAlignment.Center
+            Label.ZIndex = 2
             return Label
         end
 
@@ -201,7 +210,7 @@ function AccioLib:CreateWindow(title)
             local Button = Instance.new("TextButton", Page)
             Button.BackgroundColor3 = baseColor
             Button.Size = UDim2.new(1, -10, 0, 35)
-            Button.Font = Enum.Font.GothamMedium
+            Button.Font = Enum.Font.GothamBold
             Button.Text = text
             Button.TextColor3 = Color3.fromRGB(230, 230, 230)
             Button.TextSize = 16
@@ -230,7 +239,7 @@ function AccioLib:CreateWindow(title)
             ToggleLabel.BackgroundTransparency = 1
             ToggleLabel.Position = UDim2.new(0, 15, 0, 0); ToggleLabel.Size = UDim2.new(1, -60, 1, 0)
             ToggleLabel.Text = text; ToggleLabel.TextColor3 = Color3.fromRGB(230, 230, 230); ToggleLabel.TextSize = 15
-            ToggleLabel.TextXAlignment = Enum.TextXAlignment.Left; ToggleLabel.Font = Enum.Font.Gotham; ToggleLabel.RichText = true
+            ToggleLabel.TextXAlignment = Enum.TextXAlignment.Left; ToggleLabel.Font = Enum.Font.GothamBold; ToggleLabel.RichText = true
 
             local SwitchBG = Instance.new("Frame", ToggleFrame)
             SwitchBG.BackgroundColor3 = Toggled and Color3.fromRGB(0, 170, 255) or Color3.fromRGB(60, 60, 60)
