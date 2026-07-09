@@ -1,8 +1,9 @@
 --[[
-    AccioLib - v4 (Final Fixes)
+    AccioLib - v5 (Visual & Text Fixes)
     - X destroys permanently
     - - minimizes (Right Shift to toggle)
-    - Buttons respect custom colors during animations
+    - Fixed Text Scaling for Title and Tabs
+    - Smooth Hover transitions for dark colors
 ]]
 
 local AccioLib = {}
@@ -14,10 +15,10 @@ local CoreGui = game:GetService("CoreGui")
 function AccioLib:CreateWindow(title)
     local Window = {}
     local ui_toggled = true
-    local is_destroyed = false -- Flag to prevent keybind from working after X is clicked
+    local is_destroyed = false
     
     local ScreenGui = Instance.new("ScreenGui")
-    ScreenGui.Name = "AccioLib_Final"
+    ScreenGui.Name = "AccioLib_v5"
     ScreenGui.Parent = (gethui and gethui()) or CoreGui 
     ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 
@@ -28,6 +29,7 @@ function AccioLib:CreateWindow(title)
     MainFrame.BorderSizePixel = 0
     MainFrame.Position = UDim2.new(0.5, -250, 0.5, -175)
     MainFrame.Size = UDim2.new(0, 500, 0, 350)
+    MainFrame.ClipsDescendants = true
     Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0, 8)
 
     local TopBar = Instance.new("Frame")
@@ -43,19 +45,18 @@ function AccioLib:CreateWindow(title)
     TitleLabel.BackgroundTransparency = 1
     TitleLabel.Position = UDim2.new(0, 15, 0, 0)
     TitleLabel.Size = UDim2.new(1, -100, 1, 0)
-    TitleLabel.Font = Enum.Font.GothamMedium
+    TitleLabel.Font = Enum.Font.GothamBold -- Switched to Bold for better visibility
     TitleLabel.Text = title or "Accio Library"
     TitleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-    TitleLabel.TextSize = 14
+    TitleLabel.TextSize = 16 -- Increased size
     TitleLabel.TextXAlignment = Enum.TextXAlignment.Left
-    TitleLabel.ZIndex = 1
 
     local Buttons = Instance.new("Frame")
     Buttons.Parent = TopBar
     Buttons.BackgroundTransparency = 1
     Buttons.Position = UDim2.new(1, -75, 0, 0)
     Buttons.Size = UDim2.new(0, 70, 1, 0)
-    Buttons.ZIndex = 10 -- Keep buttons on top of title
+    Buttons.ZIndex = 5
 
     local function createTopBtn(text, color, pos)
         local btn = Instance.new("TextButton")
@@ -66,36 +67,32 @@ function AccioLib:CreateWindow(title)
         btn.Font = Enum.Font.GothamBold
         btn.Text = text
         btn.TextColor3 = color
-        btn.TextSize = 18
-        btn.ZIndex = 11
+        btn.TextSize = 20
+        btn.ZIndex = 6
         return btn
     end
 
     local CloseBtn = createTopBtn("×", Color3.fromRGB(255, 80, 80), UDim2.new(0, 35, 0, 0))
     local MinBtn = createTopBtn("−", Color3.fromRGB(200, 200, 200), UDim2.new(0, 0, 0, 0))
 
-    -- [X] PERMANENT DESTRUCTION
     CloseBtn.MouseButton1Click:Connect(function()
         is_destroyed = true
         ScreenGui:Destroy()
     end)
 
-    -- [-] MINIMIZE TOGGLE
     local function toggleUI()
-        if is_destroyed then return end -- Don't run if X was clicked
+        if is_destroyed then return end
         ui_toggled = not ui_toggled
         MainFrame.Visible = ui_toggled
     end
     MinBtn.MouseButton1Click:Connect(toggleUI)
 
-    -- RightShift Listener
     UserInputService.InputBegan:Connect(function(input, gpe)
         if not gpe and input.KeyCode == Enum.KeyCode.RightShift then
             toggleUI()
         end
     end)
 
-    -- Content Area setup
     local Sidebar = Instance.new("Frame", MainFrame)
     Sidebar.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
     Sidebar.Position = UDim2.new(0, 0, 0, 40)
@@ -114,7 +111,7 @@ function AccioLib:CreateWindow(title)
     ContentArea.Position = UDim2.new(0, 155, 0, 45)
     ContentArea.Size = UDim2.new(1, -160, 1, -50)
 
-    -- Dragging Logic
+    -- Dragging Fix
     local dragging, dragInput, dragStart, startPos
     TopBar.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 then
@@ -135,10 +132,11 @@ function AccioLib:CreateWindow(title)
         local TabButton = Instance.new("TextButton", TabContainer)
         TabButton.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
         TabButton.BackgroundTransparency = 1
-        TabButton.Size = UDim2.new(1, -10, 0, 30)
+        TabButton.Size = UDim2.new(1, -10, 0, 32) -- Slightly taller
         TabButton.Text = "  " .. name
         TabButton.TextColor3 = Color3.fromRGB(150, 150, 150)
-        TabButton.Font = Enum.Font.Gotham
+        TabButton.Font = Enum.Font.GothamMedium
+        TabButton.TextSize = 14 -- Increased tab text size
         TabButton.TextXAlignment = Enum.TextXAlignment.Left
         Instance.new("UICorner", TabButton).CornerRadius = UDim.new(0, 6)
 
@@ -164,21 +162,20 @@ function AccioLib:CreateWindow(title)
         TabButton.MouseButton1Click:Connect(selectTab)
         if not currentTab then selectTab() end
 
-        -- BUTTON WITH COLOR FIX
         function Tab:CreateButton(text, callback, customColor)
             local baseColor = customColor or Color3.fromRGB(45, 45, 45)
             local Button = Instance.new("TextButton", Page)
             Button.BackgroundColor3 = baseColor
             Button.Size = UDim2.new(1, -10, 0, 35)
-            Button.Font = Enum.Font.Gotham
+            Button.Font = Enum.Font.GothamMedium
             Button.Text = text
             Button.TextColor3 = Color3.fromRGB(230, 230, 230)
             Button.TextSize = 13
             Instance.new("UICorner", Button).CornerRadius = UDim.new(0, 6)
 
-            -- Animation logic that respects custom color
+            -- Hover using Lerp (Better for dark colors)
             Button.MouseEnter:Connect(function()
-                TweenService:Create(Button, TweenInfo.new(0.2), {BackgroundColor3 = Color3.new(baseColor.R + 0.05, baseColor.G + 0.05, baseColor.B + 0.05)}):Play()
+                TweenService:Create(Button, TweenInfo.new(0.2), {BackgroundColor3 = baseColor:Lerp(Color3.new(1,1,1), 0.1)}):Play()
             end)
             Button.MouseLeave:Connect(function()
                 TweenService:Create(Button, TweenInfo.new(0.2), {BackgroundColor3 = baseColor}):Play()
