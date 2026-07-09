@@ -1,9 +1,9 @@
 --[[
-    AccioLib - v5 (Visual & Text Fixes)
+    AccioLib - v6 (Tab Text & Sizing Fix)
     - X destroys permanently
     - - minimizes (Right Shift to toggle)
-    - Fixed Text Scaling for Title and Tabs
-    - Smooth Hover transitions for dark colors
+    - Fixed Category/Tab text being too small
+    - Deeper Red support
 ]]
 
 local AccioLib = {}
@@ -18,7 +18,7 @@ function AccioLib:CreateWindow(title)
     local is_destroyed = false
     
     local ScreenGui = Instance.new("ScreenGui")
-    ScreenGui.Name = "AccioLib_v5"
+    ScreenGui.Name = "AccioLib_v6"
     ScreenGui.Parent = (gethui and gethui()) or CoreGui 
     ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 
@@ -45,10 +45,10 @@ function AccioLib:CreateWindow(title)
     TitleLabel.BackgroundTransparency = 1
     TitleLabel.Position = UDim2.new(0, 15, 0, 0)
     TitleLabel.Size = UDim2.new(1, -100, 1, 0)
-    TitleLabel.Font = Enum.Font.GothamBold -- Switched to Bold for better visibility
+    TitleLabel.Font = Enum.Font.GothamBold
     TitleLabel.Text = title or "Accio Library"
     TitleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-    TitleLabel.TextSize = 16 -- Increased size
+    TitleLabel.TextSize = 18 -- Bold and large
     TitleLabel.TextXAlignment = Enum.TextXAlignment.Left
 
     local Buttons = Instance.new("Frame")
@@ -67,7 +67,7 @@ function AccioLib:CreateWindow(title)
         btn.Font = Enum.Font.GothamBold
         btn.Text = text
         btn.TextColor3 = color
-        btn.TextSize = 20
+        btn.TextSize = 22
         btn.ZIndex = 6
         return btn
     end
@@ -111,7 +111,7 @@ function AccioLib:CreateWindow(title)
     ContentArea.Position = UDim2.new(0, 155, 0, 45)
     ContentArea.Size = UDim2.new(1, -160, 1, -50)
 
-    -- Dragging Fix
+    -- Dragging
     local dragging, dragInput, dragStart, startPos
     TopBar.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 then
@@ -132,11 +132,11 @@ function AccioLib:CreateWindow(title)
         local TabButton = Instance.new("TextButton", TabContainer)
         TabButton.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
         TabButton.BackgroundTransparency = 1
-        TabButton.Size = UDim2.new(1, -10, 0, 32) -- Slightly taller
+        TabButton.Size = UDim2.new(1, -10, 0, 38) -- Taller button for better text fit
         TabButton.Text = "  " .. name
-        TabButton.TextColor3 = Color3.fromRGB(150, 150, 150)
-        TabButton.Font = Enum.Font.GothamMedium
-        TabButton.TextSize = 14 -- Increased tab text size
+        TabButton.TextColor3 = Color3.fromRGB(160, 160, 160)
+        TabButton.Font = Enum.Font.GothamBold -- Bolded for clarity
+        TabButton.TextSize = 15 -- Perfectly readable size
         TabButton.TextXAlignment = Enum.TextXAlignment.Left
         Instance.new("UICorner", TabButton).CornerRadius = UDim.new(0, 6)
 
@@ -149,7 +149,7 @@ function AccioLib:CreateWindow(title)
 
         local function selectTab()
             if currentTab then
-                currentTab.Button.TextColor3 = Color3.fromRGB(150, 150, 150)
+                currentTab.Button.TextColor3 = Color3.fromRGB(160, 160, 160)
                 currentTab.Button.BackgroundTransparency = 1
                 currentTab.Page.Visible = false
             end
@@ -170,10 +170,9 @@ function AccioLib:CreateWindow(title)
             Button.Font = Enum.Font.GothamMedium
             Button.Text = text
             Button.TextColor3 = Color3.fromRGB(230, 230, 230)
-            Button.TextSize = 13
+            Button.TextSize = 14
             Instance.new("UICorner", Button).CornerRadius = UDim.new(0, 6)
 
-            -- Hover using Lerp (Better for dark colors)
             Button.MouseEnter:Connect(function()
                 TweenService:Create(Button, TweenInfo.new(0.2), {BackgroundColor3 = baseColor:Lerp(Color3.new(1,1,1), 0.1)}):Play()
             end)
@@ -195,7 +194,7 @@ function AccioLib:CreateWindow(title)
             local ToggleLabel = Instance.new("TextLabel", ToggleFrame)
             ToggleLabel.BackgroundTransparency = 1
             ToggleLabel.Position = UDim2.new(0, 15, 0, 0); ToggleLabel.Size = UDim2.new(1, -60, 1, 0)
-            ToggleLabel.Text = text; ToggleLabel.TextColor3 = Color3.fromRGB(230, 230, 230); ToggleLabel.TextSize = 13
+            ToggleLabel.Text = text; ToggleLabel.TextColor3 = Color3.fromRGB(230, 230, 230); ToggleLabel.TextSize = 14
             ToggleLabel.TextXAlignment = Enum.TextXAlignment.Left; ToggleLabel.Font = Enum.Font.Gotham
 
             local SwitchBG = Instance.new("Frame", ToggleFrame)
