@@ -1,5 +1,8 @@
 --[[
-    AccioLib - v3 (Destroy on X, Minimize on -, Custom Button Colors)
+    AccioLib - v4 (Final Fixes)
+    - X destroys permanently
+    - - minimizes (Right Shift to toggle)
+    - Buttons respect custom colors during animations
 ]]
 
 local AccioLib = {}
@@ -11,9 +14,10 @@ local CoreGui = game:GetService("CoreGui")
 function AccioLib:CreateWindow(title)
     local Window = {}
     local ui_toggled = true
+    local is_destroyed = false -- Flag to prevent keybind from working after X is clicked
     
     local ScreenGui = Instance.new("ScreenGui")
-    ScreenGui.Name = "AccioLib_v3"
+    ScreenGui.Name = "AccioLib_Final"
     ScreenGui.Parent = (gethui and gethui()) or CoreGui 
     ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 
@@ -24,7 +28,6 @@ function AccioLib:CreateWindow(title)
     MainFrame.BorderSizePixel = 0
     MainFrame.Position = UDim2.new(0.5, -250, 0.5, -175)
     MainFrame.Size = UDim2.new(0, 500, 0, 350)
-    
     Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0, 8)
 
     local TopBar = Instance.new("Frame")
@@ -34,13 +37,6 @@ function AccioLib:CreateWindow(title)
     TopBar.BorderSizePixel = 0
     TopBar.Size = UDim2.new(1, 0, 0, 40)
     Instance.new("UICorner", TopBar).CornerRadius = UDim.new(0, 8)
-    
-    local TopBarLine = Instance.new("Frame")
-    TopBarLine.Name = "Line"
-    TopBarLine.Parent = TopBar
-    TopBarLine.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-    TopBarLine.Position = UDim2.new(0, 0, 1, -5)
-    TopBarLine.Size = UDim2.new(1, 0, 0, 5)
 
     local TitleLabel = Instance.new("TextLabel")
     TitleLabel.Parent = TopBar
@@ -52,12 +48,14 @@ function AccioLib:CreateWindow(title)
     TitleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
     TitleLabel.TextSize = 14
     TitleLabel.TextXAlignment = Enum.TextXAlignment.Left
+    TitleLabel.ZIndex = 1
 
     local Buttons = Instance.new("Frame")
     Buttons.Parent = TopBar
     Buttons.BackgroundTransparency = 1
     Buttons.Position = UDim2.new(1, -75, 0, 0)
     Buttons.Size = UDim2.new(0, 70, 1, 0)
+    Buttons.ZIndex = 10 -- Keep buttons on top of title
 
     local function createTopBtn(text, color, pos)
         local btn = Instance.new("TextButton")
@@ -69,50 +67,49 @@ function AccioLib:CreateWindow(title)
         btn.Text = text
         btn.TextColor3 = color
         btn.TextSize = 18
+        btn.ZIndex = 11
         return btn
     end
 
     local CloseBtn = createTopBtn("×", Color3.fromRGB(255, 80, 80), UDim2.new(0, 35, 0, 0))
     local MinBtn = createTopBtn("−", Color3.fromRGB(200, 200, 200), UDim2.new(0, 0, 0, 0))
 
-    -- [X] DESTROYS THE GUI
+    -- [X] PERMANENT DESTRUCTION
     CloseBtn.MouseButton1Click:Connect(function()
+        is_destroyed = true
         ScreenGui:Destroy()
     end)
 
-    -- [-] MINIMIZES (TOGGLE)
+    -- [-] MINIMIZE TOGGLE
     local function toggleUI()
+        if is_destroyed then return end -- Don't run if X was clicked
         ui_toggled = not ui_toggled
         MainFrame.Visible = ui_toggled
     end
     MinBtn.MouseButton1Click:Connect(toggleUI)
 
-    -- RightShift to Toggle
+    -- RightShift Listener
     UserInputService.InputBegan:Connect(function(input, gpe)
         if not gpe and input.KeyCode == Enum.KeyCode.RightShift then
             toggleUI()
         end
     end)
 
-    -- UI Structure
-    local Sidebar = Instance.new("Frame")
-    Sidebar.Name = "Sidebar"
-    Sidebar.Parent = MainFrame
+    -- Content Area setup
+    local Sidebar = Instance.new("Frame", MainFrame)
     Sidebar.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
     Sidebar.Position = UDim2.new(0, 0, 0, 40)
     Sidebar.Size = UDim2.new(0, 150, 1, -40)
     Instance.new("UICorner", Sidebar).CornerRadius = UDim.new(0, 8)
     
-    local TabContainer = Instance.new("ScrollingFrame")
-    TabContainer.Parent = Sidebar
+    local TabContainer = Instance.new("ScrollingFrame", Sidebar)
     TabContainer.BackgroundTransparency = 1
     TabContainer.Size = UDim2.new(1, 0, 1, -10)
     TabContainer.Position = UDim2.new(0, 0, 0, 5)
     TabContainer.ScrollBarThickness = 0
     Instance.new("UIListLayout", TabContainer).Padding = UDim.new(0, 5)
 
-    local ContentArea = Instance.new("Frame")
-    ContentArea.Parent = MainFrame
+    local ContentArea = Instance.new("Frame", MainFrame)
     ContentArea.BackgroundTransparency = 1
     ContentArea.Position = UDim2.new(0, 155, 0, 45)
     ContentArea.Size = UDim2.new(1, -160, 1, -50)
@@ -135,8 +132,7 @@ function AccioLib:CreateWindow(title)
     local currentTab = nil
     function Window:CreateTab(name)
         local Tab = {}
-        local TabButton = Instance.new("TextButton")
-        TabButton.Parent = TabContainer
+        local TabButton = Instance.new("TextButton", TabContainer)
         TabButton.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
         TabButton.BackgroundTransparency = 1
         TabButton.Size = UDim2.new(1, -10, 0, 30)
@@ -146,12 +142,11 @@ function AccioLib:CreateWindow(title)
         TabButton.TextXAlignment = Enum.TextXAlignment.Left
         Instance.new("UICorner", TabButton).CornerRadius = UDim.new(0, 6)
 
-        local Page = Instance.new("ScrollingFrame")
-        Page.Parent = ContentArea
+        local Page = Instance.new("ScrollingFrame", ContentArea)
         Page.BackgroundTransparency = 1
         Page.Size = UDim2.new(1, 0, 1, 0)
         Page.Visible = false
-        Page.ScrollBarThickness = 2
+        Page.ScrollBarThickness = 0
         Instance.new("UIListLayout", Page).Padding = UDim.new(0, 7)
 
         local function selectTab()
@@ -169,11 +164,11 @@ function AccioLib:CreateWindow(title)
         TabButton.MouseButton1Click:Connect(selectTab)
         if not currentTab then selectTab() end
 
-        -- [NEW] Updated Button with Color parameter
+        -- BUTTON WITH COLOR FIX
         function Tab:CreateButton(text, callback, customColor)
-            local Button = Instance.new("TextButton")
-            Button.Parent = Page
-            Button.BackgroundColor3 = customColor or Color3.fromRGB(45, 45, 45)
+            local baseColor = customColor or Color3.fromRGB(45, 45, 45)
+            local Button = Instance.new("TextButton", Page)
+            Button.BackgroundColor3 = baseColor
             Button.Size = UDim2.new(1, -10, 0, 35)
             Button.Font = Enum.Font.Gotham
             Button.Text = text
@@ -181,31 +176,38 @@ function AccioLib:CreateWindow(title)
             Button.TextSize = 13
             Instance.new("UICorner", Button).CornerRadius = UDim.new(0, 6)
 
+            -- Animation logic that respects custom color
+            Button.MouseEnter:Connect(function()
+                TweenService:Create(Button, TweenInfo.new(0.2), {BackgroundColor3 = Color3.new(baseColor.R + 0.05, baseColor.G + 0.05, baseColor.B + 0.05)}):Play()
+            end)
+            Button.MouseLeave:Connect(function()
+                TweenService:Create(Button, TweenInfo.new(0.2), {BackgroundColor3 = baseColor}):Play()
+            end)
+
             Button.MouseButton1Click:Connect(function() if callback then callback() end end)
             return Button
         end
 
         function Tab:CreateToggle(text, default, callback)
             local Toggled = default or false
-            local ToggleFrame = Instance.new("Frame")
-            ToggleFrame.Parent = Page
+            local ToggleFrame = Instance.new("Frame", Page)
             ToggleFrame.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
             ToggleFrame.Size = UDim2.new(1, -10, 0, 35)
             Instance.new("UICorner", ToggleFrame).CornerRadius = UDim.new(0, 6)
 
-            local ToggleLabel = Instance.new("TextLabel")
-            ToggleLabel.Parent = ToggleFrame; ToggleLabel.BackgroundTransparency = 1
+            local ToggleLabel = Instance.new("TextLabel", ToggleFrame)
+            ToggleLabel.BackgroundTransparency = 1
             ToggleLabel.Position = UDim2.new(0, 15, 0, 0); ToggleLabel.Size = UDim2.new(1, -60, 1, 0)
             ToggleLabel.Text = text; ToggleLabel.TextColor3 = Color3.fromRGB(230, 230, 230); ToggleLabel.TextSize = 13
             ToggleLabel.TextXAlignment = Enum.TextXAlignment.Left; ToggleLabel.Font = Enum.Font.Gotham
 
-            local SwitchBG = Instance.new("Frame")
-            SwitchBG.Parent = ToggleFrame; SwitchBG.BackgroundColor3 = Toggled and Color3.fromRGB(0, 170, 255) or Color3.fromRGB(60, 60, 60)
+            local SwitchBG = Instance.new("Frame", ToggleFrame)
+            SwitchBG.BackgroundColor3 = Toggled and Color3.fromRGB(0, 170, 255) or Color3.fromRGB(60, 60, 60)
             SwitchBG.Position = UDim2.new(1, -50, 0.5, -10); SwitchBG.Size = UDim2.new(0, 40, 0, 20)
             Instance.new("UICorner", SwitchBG).CornerRadius = UDim.new(1, 0)
 
-            local Knob = Instance.new("Frame")
-            Knob.Parent = SwitchBG; Knob.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+            local Knob = Instance.new("Frame", SwitchBG)
+            Knob.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
             Knob.Position = Toggled and UDim2.new(1, -18, 0, 2) or UDim2.new(0, 2, 0, 2)
             Knob.Size = UDim2.new(0, 16, 0, 16); Instance.new("UICorner", Knob).CornerRadius = UDim.new(1, 0)
 
