@@ -1,9 +1,9 @@
 --[[
-    AccioLib - v10 (The "Polish" Update)
-    - Weighted Interpolation Dragging (Silky Smooth)
-    - CreateLabel fixed (Z-Index & Canvas fix)
-    - Settings & Credits support restored
-    - X = Total Destroy | - = Minimize (Right Shift to return)
+    AccioLib - v11 (Layout & Color Update)
+    - Manual LayoutOrder support for all elements
+    - Colored Labels support
+    - Weighted Lerp Dragging (0.1 damping)
+    - X = Destroy | - = Minimize (Right Shift)
 ]]
 
 local AccioLib = {}
@@ -19,7 +19,7 @@ function AccioLib:CreateWindow(title)
     local is_destroyed = false
     
     local ScreenGui = Instance.new("ScreenGui")
-    ScreenGui.Name = "AccioLib_v10"
+    ScreenGui.Name = "AccioLib_v11"
     ScreenGui.Parent = (gethui and gethui()) or CoreGui 
     ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 
@@ -77,13 +77,11 @@ function AccioLib:CreateWindow(title)
     local CloseBtn = createTopBtn("×", Color3.fromRGB(255, 80, 80), UDim2.new(0, 35, 0, 0))
     local MinBtn = createTopBtn("−", Color3.fromRGB(200, 200, 200), UDim2.new(0, 0, 0, 0))
 
-    -- [X] DESTROY
     CloseBtn.MouseButton1Click:Connect(function()
         is_destroyed = true
         ScreenGui:Destroy()
     end)
 
-    -- [-] MINIMIZE
     local function toggleUI()
         if is_destroyed then return end
         ui_toggled = not ui_toggled
@@ -97,9 +95,9 @@ function AccioLib:CreateWindow(title)
         end
     end)
 
-    -- [NEW] WEIGHTED DRAGGING SYSTEM
+    -- SMOOTH LERP DRAGGING
     local dragging = false
-    local dragInput, dragStart, startPos
+    local dragStart, startPos
     
     TopBar.InputBegan:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
@@ -118,16 +116,11 @@ function AccioLib:CreateWindow(title)
     RunService.RenderStepped:Connect(function()
         if dragging and not is_destroyed then
             local mouse = UserInputService:GetMouseLocation()
-            local targetX = startPos.X.Offset + (mouse.X - dragStart.X)
-            local targetY = startPos.Y.Offset + (mouse.Y - dragStart.Y) - 36
-            local targetPos = UDim2.new(startPos.X.Scale, targetX, startPos.Y.Scale, targetY)
-            
-            -- Weighted Lerp (0.12 is the smoothness coefficient)
-            MainFrame.Position = MainFrame.Position:Lerp(targetPos, 0.12)
+            local targetPos = UDim2.new(startPos.X.Scale, startPos.X.Offset + (mouse.X - dragStart.X), startPos.Y.Scale, startPos.Y.Offset + (mouse.Y - dragStart.Y) - 36)
+            MainFrame.Position = MainFrame.Position:Lerp(targetPos, 0.1) -- Silky 0.1 Lerp
         end
     end)
 
-    -- Sidebar and Content Structure
     local Sidebar = Instance.new("Frame", MainFrame)
     Sidebar.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
     Sidebar.Position = UDim2.new(0, 0, 0, 40)
@@ -135,125 +128,73 @@ function AccioLib:CreateWindow(title)
     Instance.new("UICorner", Sidebar).CornerRadius = UDim.new(0, 8)
     
     local TabContainer = Instance.new("ScrollingFrame", Sidebar)
-    TabContainer.BackgroundTransparency = 1
-    TabContainer.Size = UDim2.new(1, 0, 1, -10)
-    TabContainer.Position = UDim2.new(0, 0, 0, 5)
-    TabContainer.ScrollBarThickness = 0
-    local layout = Instance.new("UIListLayout", TabContainer)
-    layout.Padding = UDim.new(0, 5)
-    layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+    TabContainer.BackgroundTransparency = 1; TabContainer.Size = UDim2.new(1, 0, 1, -10); TabContainer.Position = UDim2.new(0, 0, 0, 5); TabContainer.ScrollBarThickness = 0
+    Instance.new("UIListLayout", TabContainer).HorizontalAlignment = Enum.HorizontalAlignment.Center
 
     local ContentArea = Instance.new("Frame", MainFrame)
-    ContentArea.BackgroundTransparency = 1
-    ContentArea.Position = UDim2.new(0, 155, 0, 45)
-    ContentArea.Size = UDim2.new(1, -160, 1, -50)
+    ContentArea.BackgroundTransparency = 1; ContentArea.Position = UDim2.new(0, 155, 0, 45); ContentArea.Size = UDim2.new(1, -160, 1, -50)
 
     local currentTab = nil
     function Window:CreateTab(name)
         local Tab = {}
         local TabButton = Instance.new("TextButton", TabContainer)
-        TabButton.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
-        TabButton.BackgroundTransparency = 1
-        TabButton.Size = UDim2.new(1, -14, 0, 40)
-        TabButton.Text = name
-        TabButton.TextColor3 = Color3.fromRGB(160, 160, 160)
-        TabButton.Font = Enum.Font.GothamBold
-        TabButton.TextSize = 18
-        TabButton.RichText = true
-        TabButton.TextXAlignment = Enum.TextXAlignment.Center
+        TabButton.BackgroundColor3 = Color3.fromRGB(45, 45, 45); TabButton.BackgroundTransparency = 1; TabButton.Size = UDim2.new(1, -14, 0, 40)
+        TabButton.Text = name; TabButton.TextColor3 = Color3.fromRGB(160, 160, 160); TabButton.Font = Enum.Font.GothamBold; TabButton.TextSize = 18; TabButton.RichText = true
         Instance.new("UICorner", TabButton).CornerRadius = UDim.new(0, 6)
 
         local Page = Instance.new("ScrollingFrame", ContentArea)
-        Page.BackgroundTransparency = 1
-        Page.Size = UDim2.new(1, 0, 1, 0)
-        Page.Visible = false
-        Page.ScrollBarThickness = 0
-        Page.BorderSizePixel = 0
-        Page.AutomaticCanvasSize = Enum.AutomaticSize.Y -- CRITICAL: Ensures content is visible
-        
+        Page.BackgroundTransparency = 1; Page.Size = UDim2.new(1, 0, 1, 0); Page.Visible = false; Page.ScrollBarThickness = 0; Page.AutomaticCanvasSize = Enum.AutomaticSize.Y
         local PageLayout = Instance.new("UIListLayout", Page)
-        PageLayout.Padding = UDim.new(0, 7)
-        PageLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+        PageLayout.Padding = UDim.new(0, 7); PageLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+        PageLayout.SortOrder = Enum.SortOrder.LayoutOrder -- ENABLE MANUAL SORTING
 
         local function selectTab()
             if currentTab then
-                currentTab.Button.TextColor3 = Color3.fromRGB(160, 160, 160)
-                currentTab.Button.BackgroundTransparency = 1
-                currentTab.Page.Visible = false
+                currentTab.Button.TextColor3 = Color3.fromRGB(160, 160, 160); currentTab.Button.BackgroundTransparency = 1; currentTab.Page.Visible = false
             end
             currentTab = {Button = TabButton, Page = Page}
-            TabButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-            TabButton.BackgroundTransparency = 0
-            Page.Visible = true
+            TabButton.TextColor3 = Color3.fromRGB(255, 255, 255); TabButton.BackgroundTransparency = 0; Page.Visible = true
         end
-
         TabButton.MouseButton1Click:Connect(selectTab)
         if not currentTab then selectTab() end
 
-        -- [FIXED] CreateLabel Function
-        function Tab:CreateLabel(text)
+        -- CreateLabel(text, order, color)
+        function Tab:CreateLabel(text, order, color)
             local Label = Instance.new("TextLabel", Page)
-            Label.BackgroundTransparency = 1
-            Label.Size = UDim2.new(1, -10, 0, 25)
-            Label.Font = Enum.Font.GothamBold
-            Label.Text = text
-            Label.TextColor3 = Color3.fromRGB(200, 200, 200)
-            Label.TextSize = 16 -- Increased for visibility
-            Label.RichText = true
-            Label.TextXAlignment = Enum.TextXAlignment.Center
-            Label.ZIndex = 2
+            Label.BackgroundTransparency = 1; Label.Size = UDim2.new(1, -10, 0, 25)
+            Label.Font = Enum.Font.GothamBold; Label.Text = text; Label.TextColor3 = color or Color3.fromRGB(200, 200, 200)
+            Label.TextSize = 16; Label.RichText = true; Label.LayoutOrder = order or 0
             return Label
         end
 
-        function Tab:CreateButton(text, callback, customColor)
+        -- CreateButton(text, callback, color, order)
+        function Tab:CreateButton(text, callback, customColor, order)
             local baseColor = customColor or Color3.fromRGB(45, 45, 45)
             local Button = Instance.new("TextButton", Page)
-            Button.BackgroundColor3 = baseColor
-            Button.Size = UDim2.new(1, -10, 0, 35)
-            Button.Font = Enum.Font.GothamBold
-            Button.Text = text
-            Button.TextColor3 = Color3.fromRGB(230, 230, 230)
-            Button.TextSize = 16
-            Button.RichText = true
+            Button.BackgroundColor3 = baseColor; Button.Size = UDim2.new(1, -10, 0, 35); Button.Font = Enum.Font.GothamBold
+            Button.Text = text; Button.TextColor3 = Color3.fromRGB(230, 230, 230); Button.TextSize = 16; Button.LayoutOrder = order or 0
             Instance.new("UICorner", Button).CornerRadius = UDim.new(0, 6)
-
-            Button.MouseEnter:Connect(function()
-                TweenService:Create(Button, TweenInfo.new(0.2), {BackgroundColor3 = baseColor:Lerp(Color3.new(1,1,1), 0.1)}):Play()
-            end)
-            Button.MouseLeave:Connect(function()
-                TweenService:Create(Button, TweenInfo.new(0.2), {BackgroundColor3 = baseColor}):Play()
-            end)
-
+            Button.MouseEnter:Connect(function() TweenService:Create(Button, TweenInfo.new(0.2), {BackgroundColor3 = baseColor:Lerp(Color3.new(1,1,1), 0.1)}):Play() end)
+            Button.MouseLeave:Connect(function() TweenService:Create(Button, TweenInfo.new(0.2), {BackgroundColor3 = baseColor}):Play() end)
             Button.MouseButton1Click:Connect(function() if callback then callback() end end)
             return Button
         end
 
-        function Tab:CreateToggle(text, default, callback)
+        -- CreateToggle(text, default, callback, order)
+        function Tab:CreateToggle(text, default, callback, order)
             local Toggled = default or false
             local ToggleFrame = Instance.new("Frame", Page)
-            ToggleFrame.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
-            ToggleFrame.Size = UDim2.new(1, -10, 0, 35)
+            ToggleFrame.BackgroundColor3 = Color3.fromRGB(45, 45, 45); ToggleFrame.Size = UDim2.new(1, -10, 0, 35); ToggleFrame.LayoutOrder = order or 0
             Instance.new("UICorner", ToggleFrame).CornerRadius = UDim.new(0, 6)
-
             local ToggleLabel = Instance.new("TextLabel", ToggleFrame)
-            ToggleLabel.BackgroundTransparency = 1
-            ToggleLabel.Position = UDim2.new(0, 15, 0, 0); ToggleLabel.Size = UDim2.new(1, -60, 1, 0)
-            ToggleLabel.Text = text; ToggleLabel.TextColor3 = Color3.fromRGB(230, 230, 230); ToggleLabel.TextSize = 15
-            ToggleLabel.TextXAlignment = Enum.TextXAlignment.Left; ToggleLabel.Font = Enum.Font.GothamBold; ToggleLabel.RichText = true
-
+            ToggleLabel.BackgroundTransparency = 1; ToggleLabel.Position = UDim2.new(0, 15, 0, 0); ToggleLabel.Size = UDim2.new(1, -60, 1, 0)
+            ToggleLabel.Text = text; ToggleLabel.TextColor3 = Color3.fromRGB(230, 230, 230); ToggleLabel.TextSize = 15; ToggleLabel.Font = Enum.Font.GothamBold; ToggleLabel.TextXAlignment = Enum.TextXAlignment.Left
             local SwitchBG = Instance.new("Frame", ToggleFrame)
-            SwitchBG.BackgroundColor3 = Toggled and Color3.fromRGB(0, 170, 255) or Color3.fromRGB(60, 60, 60)
-            SwitchBG.Position = UDim2.new(1, -50, 0.5, -10); SwitchBG.Size = UDim2.new(0, 40, 0, 20)
+            SwitchBG.BackgroundColor3 = Toggled and Color3.fromRGB(0, 170, 255) or Color3.fromRGB(60, 60, 60); SwitchBG.Position = UDim2.new(1, -50, 0.5, -10); SwitchBG.Size = UDim2.new(0, 40, 0, 20)
             Instance.new("UICorner", SwitchBG).CornerRadius = UDim.new(1, 0)
-
             local Knob = Instance.new("Frame", SwitchBG)
-            Knob.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
-            Knob.Position = Toggled and UDim2.new(1, -18, 0, 2) or UDim2.new(0, 2, 0, 2)
-            Knob.Size = UDim2.new(0, 16, 0, 16); Instance.new("UICorner", Knob).CornerRadius = UDim.new(1, 0)
-
-            local Click = Instance.new("TextButton", ToggleFrame)
-            Click.BackgroundTransparency = 1; Click.Size = UDim2.new(1, 0, 1, 0); Click.Text = ""
-
+            Knob.BackgroundColor3 = Color3.fromRGB(255, 255, 255); Knob.Position = Toggled and UDim2.new(1, -18, 0, 2) or UDim2.new(0, 2, 0, 2); Knob.Size = UDim2.new(0, 16, 0, 16); Instance.new("UICorner", Knob).CornerRadius = UDim.new(1, 0)
+            local Click = Instance.new("TextButton", ToggleFrame); Click.BackgroundTransparency = 1; Click.Size = UDim2.new(1, 0, 1, 0); Click.Text = ""
             Click.MouseButton1Click:Connect(function()
                 Toggled = not Toggled
                 SwitchBG.BackgroundColor3 = Toggled and Color3.fromRGB(0, 170, 255) or Color3.fromRGB(60, 60, 60)
