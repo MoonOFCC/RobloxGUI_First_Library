@@ -3,11 +3,65 @@
     Updated: 10th july of 2026
 ]]
 
+-- 1. Load the Library
 local LibRaw = "https://raw.githubusercontent.com/MoonOFCC/RobloxGUI_First_Library/refs/heads/main/library_main.lua"
 local AccioLib = loadstring(game:HttpGet(LibRaw))()
 
+-- 2. Variables for Macros Logic
+local player = game.Players.LocalPlayer
+local speedEnabled = false
+local jumpEnabled = false
+
+local targetSpeed = 100
+local targetJump = 92
+
+local defaultSpeed = 16
+local defaultJump = 50
+
+-- 3. Sync Function (Ensures stats are always correct)
+local function syncStats()
+    if player.Character and player.Character:FindFirstChildOfClass("Humanoid") then
+        local hum = player.Character:FindFirstChildOfClass("Humanoid")
+        
+        -- Handle Speed
+        if speedEnabled then
+            hum.WalkSpeed = targetSpeed
+        else
+            hum.WalkSpeed = defaultSpeed
+        end
+        
+        -- Handle Jump
+        if jumpEnabled then
+            hum.UseJumpPower = true
+            hum.JumpPower = targetJump
+        else
+            -- FIXED: Now resets back to 50 when toggled off
+            hum.UseJumpPower = true 
+            hum.JumpPower = defaultJump
+        end
+    end
+end
+
+-- 4. Background Loop (Forces stats every frame)
+task.spawn(function()
+    while true do
+        task.wait()
+        -- We run the sync continuously to prevent game resets
+        syncStats()
+    end
+end)
+
+-- 5. Respawn Handler
+player.CharacterAdded:Connect(function(character)
+    character:WaitForChild("Humanoid")
+    task.wait(0.3)
+    syncStats()
+end)
+
+-- 6. Create the Window
 local window = AccioLib:CreateWindow("Moon Hub | Premium v11")
 
+-- 7. Create Tabs
 local mainTab = window:CreateTab("Main")
 local settingsTab = window:CreateTab("Settings")
 local macrosTab = window:CreateTab("Macros")
@@ -15,41 +69,53 @@ local creditsTab = window:CreateTab("Credits")
 
 -- [Main Tab Settings]
 mainTab:CreateButton("Super Speed", function()
-    game.Players.LocalPlayer.Character.Humanoid.WalkSpeed = 74
-end)
-mainTab:CreateButton("Super Jump", function()
-    local hum = game.Players.LocalPlayer.Character.Humanoid
-    hum.UseJumpPower = true
-    hum.JumpPower = 84
+    if player.Character and player.Character:FindFirstChild("Humanoid") then
+        player.Character.Humanoid.WalkSpeed = 74
+    end
 end)
 
--- [Settings Tab with Custom Sorting]
--- LayoutOrder: -10 makes this appear at the top.
--- Color: Color3 makes the text red.
+mainTab:CreateButton("Super Jump", function()
+    if player.Character and player.Character:FindFirstChild("Humanoid") then
+        local hum = player.Character.Humanoid
+        hum.UseJumpPower = true
+        hum.JumpPower = 84
+    end
+end)
+
+-- [Settings Tab]
 settingsTab:CreateLabel("--- DANGER ZONE ---", -10, Color3.fromRGB(255, 50, 50)) 
 
--- LayoutOrder: -5 makes this appear below the label but above other things.
 settingsTab:CreateButton("Kill Roblox", function()
     game:Shutdown()
 end, Color3.fromRGB(120, 0, 0), -5) 
 
--- Default (Order 0)
 settingsTab:CreateLabel("--- UI SETTINGS ---", 0)
 settingsTab:CreateButton("Check Version", function()
     game:GetService("StarterGui"):SetCore("SendNotification", {
         Title = "Moon Hub",
-        Text = "Version: Premium v11",
+        Text = "Version: Premium v11.2",
         Duration = 5
     })
-end, nil, 1) -- Order 1 puts this at the bottom
+end, nil, 1)
+
+-- [Macros Tab Settings]
+macrosTab:CreateToggle("Speed+", false, function(state)
+    speedEnabled = state
+    syncStats() -- Update immediately
+end, 1)
+
+macrosTab:CreateToggle("Jump+", false, function(state)
+    jumpEnabled = state
+    syncStats() -- Update immediately
+end, 2)
 
 -- [Credits Tab Settings]
 creditsTab:CreateLabel("--- Created By ---", -10, Color3.fromRGB(178, 108, 235))
 creditsTab:CreateLabel("Moon_OFCC", -9)
 
--- Notification
+-- 8. Final Notification
 game:GetService("StarterGui"):SetCore("SendNotification", {
     Title = "Moon Hub",
-    Text = "Moon Hub Loaded, Right Shift To Toggle GUI",
+    Text = "Jump Reset Fix Applied (v11.2)",
     Duration = 5
 })
