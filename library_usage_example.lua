@@ -26,18 +26,12 @@ local function syncStats()
         -- Handle Speed
         if speedEnabled then
             hum.WalkSpeed = targetSpeed
-        else
-            hum.WalkSpeed = defaultSpeed
         end
         
         -- Handle Jump
         if jumpEnabled then
             hum.UseJumpPower = true
             hum.JumpPower = targetJump
-        else
-            -- FIXED: Now resets back to 50 when toggled off
-            hum.UseJumpPower = true 
-            hum.JumpPower = defaultJump
         end
     end
 end
@@ -116,11 +110,22 @@ end, nil, 1)
 macrosTab:CreateToggle("Speed+", false, function(state)
     speedEnabled = state
     syncStats() -- Update immediately
+
+    if speedEnabled == false then
+        task.wait(0.1)
+        player.Character.Humanoid.WalkSpeed = defaultSpeed
+    end
 end, 1)
 
 macrosTab:CreateToggle("Jump+", false, function(state)
     jumpEnabled = state
     syncStats() -- Update immediately
+
+    if jumpEnabled == false then
+        task.wait(0.1)
+        hum.UseJumpPower = true
+        hum.JumpPower = defaultJump
+    end
 end, 2)
 
 -- [Credits Tab Settings]
