@@ -82,6 +82,20 @@ mainTab:CreateButton("Super Jump", function()
     end
 end)
 
+-- CreateSlider Usage
+-- Params: text, defaultToggle, callback(state, val), defaultVal, min, max, order
+mainTab:CreateSlider("Dynamic Speed Controller", false, function(state, value)
+    local hum = game.Players.LocalPlayer.Character:FindFirstChild("Humanoid")
+    if hum then
+        if state then
+            hum.WalkSpeed = value
+        else
+            hum.WalkSpeed = 16 -- Reset to default
+        end
+    end
+    print("Toggle:", state, "| Speed:", value)
+end, 16, 1, 500, 1)
+
 -- [Settings Tab]
 settingsTab:CreateLabel("--- DANGER ZONE ---", -10, Color3.fromRGB(255, 50, 50)) 
 
