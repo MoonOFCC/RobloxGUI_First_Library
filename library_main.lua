@@ -1,12 +1,12 @@
 --[[
-    AccioLib - v13 (Advanced Contrast Update)
+    MoonLib - v13 (Advanced Contrast Update)
     - Added Optional Custom Background Colors for all components
     - Auto-Contrast Text: Automatically switches text to Black on bright colors
     - Manual LayoutOrder support for all elements
     - Weighted Lerp Dragging (0.1 damping)
 ]]
 
-local AccioLib = {}
+local MoonLib = {}
 
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
@@ -19,13 +19,13 @@ local function isColorBright(color)
     return luminance > 0.5
 end
 
-function AccioLib:CreateWindow(title)
+function MoonLib:CreateWindow(title)
     local Window = {}
     local ui_toggled = true
     local is_destroyed = false
     
     local ScreenGui = Instance.new("ScreenGui")
-    ScreenGui.Name = "AccioLib_v13"
+    ScreenGui.Name = "MoonLib_v13"
     ScreenGui.Parent = (gethui and gethui()) or CoreGui 
     ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 
@@ -135,4 +135,4 @@ function AccioLib:CreateWindow(title)
     return Window
 end
 
-return AccioLib
+return MoonLib
