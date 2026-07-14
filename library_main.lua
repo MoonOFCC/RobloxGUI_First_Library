@@ -44,7 +44,7 @@ function MoonLib:CreateWindow(title)
     end
     local CloseBtn = createTopBtn("×", Color3.fromRGB(255, 80, 80), UDim2.new(0, 35, 0, 0))
     local MinBtn = createTopBtn("−", Color3.fromRGB(200, 200, 200), UDim2.new(0, 0, 0, 0))
-    CloseBtn.MouseButton1Click:Connect(function() self:Destroy() is_destroyed = true; ScreenGui:Destroy() end)
+    CloseBtn.MouseButton1Click:Connect(function() self:Destroy() --[[is_destroyed = true;]] ScreenGui:Destroy() end)
     local function toggleUI() if is_destroyed then return end ui_toggled = not ui_toggled; MainFrame.Visible = ui_toggled end
     MinBtn.MouseButton1Click:Connect(toggleUI)
     UserInputService.InputBegan:Connect(function(input, gpe) if not gpe and input.KeyCode == Enum.KeyCode.RightShift then toggleUI() end end)
